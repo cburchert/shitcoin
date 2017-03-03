@@ -137,7 +137,6 @@ class Block:
 
     def is_header_valid(self):
         # Check metadata is available
-        log.debug('checking block')
         if self._parent is None:
             return False
         if self._height == -1:
@@ -146,20 +145,16 @@ class Block:
             return self._valid
         if self.prev_hash != self._parent.get_hash():
             return False
-        log.debug('parent is good.')
 
         # Check difficulty
         if self.diff != self._parent.get_next_diff():
             return False
-        log.debug('diff is good.')
 
         # Check Proof-of-Work
         block_hash = self.get_hash()
-        print(hexlify(block_hash))
         if int.from_bytes(block_hash, byteorder='big') >> (
                 8 * HASH_LEN - self.diff) != 0:
             return False
-        log.debug('all good')
 
         return True
 

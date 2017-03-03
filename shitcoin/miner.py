@@ -105,13 +105,8 @@ class Miner:
                     if int.from_bytes(h, byteorder='big') < target_hash:
                         # Found a block!
                         log.info("Found a block: %s!" % hexlify(h))
-                        print(prefix + struct.pack('>Q', lownonce))
                         target_block.nonce = lownonce + (
                             int.from_bytes(highnonce, byteorder='big') << 64)
-                        log.info("recalc: %s" % hexlify(target_block.get_hash()))
-                        print(target_block.serialize_header().get_bytes())
-                        if target_block.get_hash() != h:
-                            raise Exception()
                         self.found_block_callback(target_block)
                         break
                     lownonce += 1
