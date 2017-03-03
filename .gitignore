@@ -1,0 +1,11 @@
+# data dir
+data
+
+# emacs cache
+*~
+
+# pycache
+__pycache__
+
+# virtualenv
+venv
