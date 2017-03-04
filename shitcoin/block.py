@@ -1,6 +1,7 @@
 from binascii import hexlify
 import logging
 import math
+from statistics import median
 import time
 
 from . import crypto
@@ -144,6 +145,20 @@ class Block:
         if self._validated:
             return self._valid
         if self.prev_hash != self._parent.get_hash():
+            return False
+
+        # Check timestamp
+        if self.timestamp > time.time() + 7200:
+            log.info("Block is more than two hours into the future!")
+            return False
+
+        last_timestamps = []
+        cur = self.get_parent()
+        for _ in range(10):
+            last_timestamps.append(cur.timestamp)
+            cur = cur.get_parent()
+        if self.timestamp < median(last_timestamps):
+            log.info("Block is older than median of last 10 blocks!")
             return False
 
         # Check difficulty
