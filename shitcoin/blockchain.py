@@ -106,10 +106,11 @@ class Blockchain:
                         func(self.head)
 
                 # Check if other blocks can be validated now
-                retry_blocks = [b for b in self.unvalidated_blocks
-                                if b.prevHash == block_hash]
-                for b in retry_blocks:
-                    self.unvalidated_blocks.remove(b)
+                retry_blocks = [(h, b) for h, b
+                                in self.unvalidated_blocks.items()
+                                if b.prev_hash == block_hash]
+                for h, b in retry_blocks:
+                    self.unvalidated_blocks.pop(h)
                     self.add_block(b)
 
             else:
