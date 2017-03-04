@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from binascii import hexlify, unhexlify
+from datetime import datetime
 import logging
 import socket
 from sys import argv
@@ -140,7 +141,15 @@ class RPC:
         blocks.reverse()
 
         for blk in blocks:
-            msg += b'BLK %s %i\n' % (hexlify(blk.get_hash()), blk.get_height())
+            msg += b'BLK %i %s\n' % (blk.get_height(), hexlify(blk.get_hash()))
+            msg += b'- prev_hash: %s\n' % hexlify(blk.prev_hash)
+            msg += b'- merkle_root: %s\n' % hexlify(blk.merkle_root)
+            msg += (b'- timestamp: %s\n'
+                    % datetime.fromtimestamp(blk.timestamp)
+                    .strftime('%Y-%m-%d %H:%M:%S').encode('utf-8'))
+            msg += b'- diff: %i\n' % blk.diff
+            msg += b'- nonce: %08x\n' % blk.nonce
+
             for tx in blk.txs:
                 msg += b'--TX %s\n' % hexlify(tx.get_txid())
                 for inp in tx.inputs:
@@ -154,6 +163,7 @@ class RPC:
                 for out in tx.outputs:
                     msg += (b'---- OUT %s %i\n'
                             % (hexlify(out.pubkey), out.amount))
+            msg += b'\n'
         return msg
 
 
