@@ -132,7 +132,7 @@ class Block:
         next_diff = int(
             math.log((2 ** self.diff) * BLOCK_TIME * DIFF_PERIOD_LEN
                      / timediff, 2))
-        if next_diff == 0:
+        if next_diff <= 0:
             next_diff = 1
         return next_diff
 
