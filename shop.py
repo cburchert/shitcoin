@@ -12,7 +12,7 @@ from shitcoin.wallet import Wallet
 
 log = logging.getLogger(__name__)
 
-FLAG = 'flagbot{They_did_not_fix_it_it_just_became_more_difficult}'
+FLAG = 'flagbot{XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}'
 
 SHOP_PORT = 8327
 BLOCKCHAIN_PORT = 8328
