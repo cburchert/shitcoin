@@ -145,12 +145,16 @@ class Miner:
         return blk
 
     def retarget(self, _=None):
+        # Blockchain head we are using. Get it once to prevent race conditions,
+        # where the head changes during execution of this function
+        blockchain_head = self.blockchain.get_head()
+
         # Build a block from all known transactions
         blk = Block()
-        blk.set_parent(self.blockchain.head)
-        blk.prev_hash = self.blockchain.head.get_hash()
+        blk.set_parent(blockchain_head)
+        blk.prev_hash = blockchain_head.get_hash()
         blk.timestamp = int(time.time())
-        blk.diff = get_next_diff(self.blockchain.head)
+        blk.diff = get_next_diff(blockchain_head)
         blk.add_transactions(self.mempool.transactions.values())
 
         # Add coinbase

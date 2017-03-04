@@ -18,6 +18,9 @@ log = logging.getLogger(__name__)
 
 
 def validate_block(block, utxos):
+    """ Validates the block with the given UTXO set. This applies the block to
+    the utxos, so if you just want to validate the block without applying the
+    transactions, copy the utxo set first. """
     if not validate_block_header(block):
         log.info("Invalid block header!")
         return False
@@ -29,10 +32,9 @@ def validate_block(block, utxos):
         return False
 
     # Check transactions
-    temp_utxos = utxos.copy()
-    temp_utxos.move_on_chain(block.get_parent())
+    utxos.move_on_chain(block.get_parent())
     try:
-        money_created = temp_utxos.apply_block(block, verify=True)
+        money_created = utxos.apply_block(block, verify=True)
     except InvalidTransaction:
         log.info("Invalid transaction in block!")
         return False

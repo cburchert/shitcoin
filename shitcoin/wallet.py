@@ -54,16 +54,21 @@ class Wallet:
         Args:
             blockchain(Blockchain): the blockchain instance to parse
         """
-        if self.current_block == self.blockchain.head:
-            # Nothing to do
-            return
+        # Get the blockchain state we are going to use. (The head might change
+        # during the execution of this function, so stick with the one we get)
+        with self.blockchain.lock:
+            blockchain_head = self.blockchain.head
+            if self.current_block == blockchain_head:
+                # Nothing to do
+                return
+            full_utxos = self.blockchain.utxos.copy()
 
         # The pubkeys we will be looking for
         pubkeys = [key[1] for key in self.keys]
 
         if self.current_block is None:
             # No state yet, parse all utxos
-            for txid, output_dict in self.blockchain.utxos.items():
+            for txid, output_dict in full_utxos.items():
                 for index, output in output_dict.items():
                     if output.pubkey in pubkeys:
                         self.utxos.append({
@@ -73,7 +78,7 @@ class Wallet:
                             'amount': output.amount,
                             'blockheight': output.block.get_height()
                         })
-            self.current_block = self.blockchain.head
+            self.current_block = blockchain_head
             return
 
         # We have some state, go to correct block
@@ -82,7 +87,7 @@ class Wallet:
         # We can assume that the main blockchain only increases in lengh, so
         # the parsed chain is always shorter than the full blockchain
         blocks_to_apply = deque()
-        cur = self.blockchain.head
+        cur = blockchain_head
         while cur.get_height() > self.current_block.get_height():
             blocks_to_apply.appendleft(cur)
             cur = cur.get_parent()

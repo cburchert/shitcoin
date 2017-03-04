@@ -68,7 +68,11 @@ class Blockchain:
                 return
 
         block.set_parent(parent)
-        if not validate_block(block, self.utxos):
+
+        # Validate the block
+        with self.lock:
+            temp_utxos = self.utxos.copy()
+        if not validate_block(block, temp_utxos):
             log.debug('Invalid block!')
             return
 
