@@ -116,4 +116,6 @@ class Blockchain:
         self.new_block_callbacks.append(func)
 
     def unregister_new_block_callback(self, func):
+        """ Remove a function from the new block callback list. Note that the
+        function object should be the same as was passed for registering. """
         self.new_block_callbacks.remove(func)

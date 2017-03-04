@@ -31,6 +31,9 @@ class Miner:
         self.mining_thread = None
         self.pubkey = pubkey
 
+        # Callback function
+        self.retarget_callback = partial(Miner.retarget, self)
+
         # mining thread. These variables are protected with the lock
         self.lock = Lock()
         self.target_block = None
@@ -52,10 +55,8 @@ class Miner:
             raise MinerIsRunningException('Miner is already running!')
         log.info('Starting miner thread...')
 
-        self.blockchain.register_new_block_callback(
-            partial(Miner.retarget, self))
-        self.mempool.register_new_tx_callback(
-            partial(Miner.retarget, self))
+        self.blockchain.register_new_block_callback(self.retarget_callback)
+        self.mempool.register_new_tx_callback(self.retarget_callback)
 
         # Clear events
         self.stop_event.clear()
@@ -73,6 +74,9 @@ class Miner:
         if self.mining_thread is None:
             raise MinerIsNotRunningException('Miner is not running!')
         log.info('Stopping miner thread...')
+
+        self.blockchain.unregister_new_block_callback(self.retarget_callback)
+        self.mempool.unregister_new_tx_callback(self.retarget_callback)
 
         self.stop_event.set()
         self.mining_thread.join(10)

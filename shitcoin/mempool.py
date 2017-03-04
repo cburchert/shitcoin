@@ -65,3 +65,6 @@ class Mempool:
 
     def register_new_tx_callback(self, func):
         self.new_tx_callbacks.append(func)
+
+    def unregister_new_tx_callback(self, func):
+        self.new_tx_callbacks.remove(func)
