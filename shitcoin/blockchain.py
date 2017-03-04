@@ -86,10 +86,21 @@ class Blockchain:
                 self.blocks_by_hash[block_hash] = block
                 # if block height is bigger than current, swap chain
                 if block.get_height() > self.head.get_height():
+                    # Log if reorg
+                    if block.get_parent() != self.head:
+                        reorg_depth = (
+                            self.head.get_height() -
+                            block.find_common_ancestor(self.head).get_height()
+                            )
+                        log.info('A longer blockchain was found.'
+                                 'Reorganizing %i blocks...'
+                                 % reorg_depth)
+
                     self.utxos.move_on_chain(self.head, block)
                     self.head = block
                     log.info("New blockchain height %i at %s"
                              % (self.head.get_height(), hexlify(block_hash)))
+
                     # Inform callbacks about the new block
                     for func in self.new_block_callbacks:
                         func(self.head)
@@ -109,6 +120,7 @@ class Blockchain:
         else:
             # Store until we get the parent
             self.unvalidated_blocks[block_hash] = block
+            # TODO: The block should be requested from another node
 
     def register_new_block_callback(self, func):
         """ Register a function to be called, when the head of the blockchain
