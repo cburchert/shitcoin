@@ -145,14 +145,14 @@ class RPC:
                 msg += b'--TX %s\n' % hexlify(tx.get_txid())
                 for inp in tx.inputs:
                     if inp.txid == NO_HASH:
-                        msg += (b'---- <-- dummy 0 (%#x, %s...)\n'
+                        msg += (b'---- INP dummy 0 (%#x, %s...)\n'
                                 % (inp.index, hexlify(inp.signature)[:32]))
                     else:
-                        msg += (b'---- <-- %s %i\n'
+                        msg += (b'---- INP %s %i\n'
                                 % (hexlify(inp.spent_output.pubkey),
                                    inp.spent_output.amount))
                 for out in tx.outputs:
-                    msg += (b'---- --> %s %i\n'
+                    msg += (b'---- OUT %s %i\n'
                             % (hexlify(out.pubkey), out.amount))
         return msg
 

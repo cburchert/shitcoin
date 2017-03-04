@@ -101,11 +101,12 @@ class P2P:
 
         if typ == b'BLK':
             blk = Block.unserialize(buf)
-            log.debug("Received block %s" % blk.get_hash())
+            log.debug("Received block %s" % hexlify(blk.get_hash()))
             with self.lock:
                 self.blocks_received.append(blk)
         elif typ == b'TXN':
             tx = Transaction.unserialize(buf)
+            log.debug("Received tx %s" % hexlify(tx.get_txid()))
             with self.lock:
                 self.txs_received.append(tx)
         elif typ == b'REQ':
