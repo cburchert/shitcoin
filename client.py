@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from binascii import hexlify, unhexlify
-from functools import partial
 import logging
 import socket
 from sys import argv
@@ -108,8 +107,7 @@ class RPC:
                         self.miner.stop_mining()
 
                     elif cmd == b'show_hashrate':
-                        with self.miner.lock:
-                            hashrate = self.miner.hashrate
+                        hashrate = self.miner.get_hashrate()
                         seconds_per_block = (
                             (2 ** self.blockchain.head.get_next_diff())
                             / hashrate / 1000)
@@ -163,8 +161,7 @@ class Client:
     def __init__(self, host, port):
         self.blockchain = Blockchain()
         self.wallet = Wallet(self.blockchain, autoload=False)
-        self.miner = Miner(self.blockchain, partial(Client.mined_block, self),
-                           NO_PUBKEY)
+        self.miner = Miner(self.blockchain, NO_PUBKEY)
 
         self.p2p = P2P(self.blockchain, self.miner, host, port)
         self.rpc = RPC(self.blockchain, self.miner, self.wallet, self.p2p)
@@ -172,11 +169,15 @@ class Client:
     def main_loop(self):
         while True:
             self.p2p.handle_incoming_data()
-            sleep(0.1)
+            self.poll_miner()
 
-    def mined_block(self, block):
-        self.blockchain.add_block(block)
-        self.p2p.broadcast_block(block)
+            sleep(0.01)
+
+    def poll_miner(self):
+        mined_block = self.miner.get_mined_block()
+        if mined_block is not None:
+            self.blockchain.add_block(mined_block)
+            self.p2p.broadcast_block(mined_block)
 
 
 if __name__ == '__main__':

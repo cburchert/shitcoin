@@ -75,7 +75,7 @@ class Block:
         blk.merkle_root = buf.read(HASH_LEN)
         blk.timestamp = buf.read_u64()
         blk.diff = buf.read_u8()
-        blk.nonce = buf.read_u128()
+        blk.nonce = buf.read_u64()
         txcount = buf.read_u32()
         blk.txs = []
         for _ in range(txcount):
@@ -105,7 +105,7 @@ class Block:
         buf.write(self.merkle_root)
         buf.write_u64(self.timestamp)
         buf.write_u8(self.diff)
-        buf.write_u128(self.nonce)
+        buf.write_u64(self.nonce)
         return buf
 
     def update_merkle_root(self):

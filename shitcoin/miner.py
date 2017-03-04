@@ -25,17 +25,17 @@ class MinerIsNotRunningException(Exception):
 
 
 class Miner:
-    def __init__(self, blockchain, found_block_callback, pubkey):
+    def __init__(self, blockchain, pubkey):
         self.blockchain = blockchain
         self.mempool = Mempool(blockchain)
         self.mining_thread = None
-        self.found_block_callback = found_block_callback
         self.pubkey = pubkey
 
-        # mining thread
+        # mining thread. These variables are protected with the lock
         self.lock = Lock()
         self.target_block = None
         self.hashrate = 0.
+        self.mined_block = None
 
         # Events
         self.stop_event = Event()
@@ -50,17 +50,19 @@ class Miner:
     def start_mining(self):
         if self.mining_thread is not None:
             raise MinerIsRunningException('Miner is already running!')
-
         log.info('Starting miner thread...')
-        # Prepare new block
-        self.build_block()
+
         self.blockchain.register_new_block_callback(
-            partial(Miner.incoming_block, self))
+            partial(Miner.retarget, self))
         self.mempool.register_new_tx_callback(
-            partial(Miner.mempool_updated, self))
+            partial(Miner.retarget, self))
 
         # Clear events
         self.stop_event.clear()
+        self.retarget_event.clear()
+
+        # Prepare new block
+        self.retarget()
 
         # Start mining thread
         self.mining_thread = Thread(target=Miner.mine, name='miner',
@@ -70,8 +72,8 @@ class Miner:
     def stop_mining(self):
         if self.mining_thread is None:
             raise MinerIsNotRunningException('Miner is not running!')
-
         log.info('Stopping miner thread...')
+
         self.stop_event.set()
         self.mining_thread.join(10)
         if self.mining_thread.is_alive():
@@ -80,51 +82,64 @@ class Miner:
 
         self.mining_thread = None
 
+    def get_hashrate(self):
+        if self.mining_thread is None:
+            raise MinerIsNotRunningException('Miner is not running!')
+
+        with self.lock:
+            return self.hashrate
+
     def mine(self):
-        # The nonce is 16 bytes. We use constant low 8 bytes to not collide
-        # with other miners. We will not finish the upper 8 bytes anyways
-        highnonce = urandom(8)
         log.info("Miner thread starting...")
-        log.debug("Mining with nonce %sxxxxxxxxxxxxxxxx"
-                  % hexlify(highnonce).decode('utf-8'))
+        nonce = int.from_bytes(urandom(4), byteorder='big')
+
         while True:
-            self.retarget_event.clear()
-            with self.lock:
-                target_block = self.target_block
-            # Prefix is block header, remove the nonce, add half our nonce
-            prefix = target_block.serialize_header().get_bytes()[:-16]
-            prefix += highnonce
+            # Wait for a target
+            target_block = None
+            while target_block is None:
+                with self.lock:
+                    target_block = self.target_block
+                    self.retarget_event.clear()
+
+            # Prefix is block header, remove the nonce
+            prefix = target_block.serialize_header().get_bytes()[:-8]
             target_hash = 1 << (8 * HASH_LEN - target_block.diff)
-            lownonce = 0
             log.debug('New mining target is %064x at blockheight %i.'
                       % (target_hash, target_block.get_height()))
-            while not self.retarget_event.is_set():
-                start_time = time.time()
-                for i in range(100000):  # do 100k hashes
-                    h = crypto.h(prefix + struct.pack('>Q', lownonce))
-                    if int.from_bytes(h, byteorder='big') < target_hash:
-                        # Found a block!
-                        log.info("Found a block: %s!" % hexlify(h))
-                        target_block.nonce = lownonce + (
-                            int.from_bytes(highnonce, byteorder='big') << 64)
-                        self.found_block_callback(target_block)
-                        break
-                    lownonce += 1
 
-                if i == 99999:
-                    with self.lock:
-                        self.hashrate = 100 / (time.time() - start_time)
+            while not self.retarget_event.is_set():
+                # Set up counters for hashrate
+                start_time = time.time()
+                start_nonce = nonce
+
+                for _ in range(100000):  # do 100k hashes
+                    h = crypto.h(prefix + struct.pack('>Q', nonce))
+                    if int.from_bytes(h, byteorder='big') < target_hash:
+                        log.info("Found a block: %s!" % hexlify(h))
+                        target_block.nonce = nonce
+                        with self.lock:
+                            self.mined_block = target_block
+                            self.target_block = None
+                            self.retarget_event.set()
+                        target_block = None
+                        break
+                    nonce += 1
+
+                # Calculate hashrate
+                hashrate = (nonce - start_nonce) / (time.time() - start_time)
+                with self.lock:
+                    self.hashrate = hashrate
 
                 if self.stop_event.is_set():
                     return
 
-    def incoming_block(self, _):
-        self.build_block()
+    def get_mined_block(self):
+        with self.lock:
+            blk = self.mined_block
+            self.mined_block = None
+        return blk
 
-    def mempool_updated(self, _):
-        self.build_block()
-
-    def build_block(self):
+    def retarget(self, _=None):
         # Build a block from all known transactions
         blk = Block()
         blk.set_parent(self.blockchain.head)
@@ -149,6 +164,4 @@ class Miner:
         blk.update_merkle_root()
         with self.lock:
             self.target_block = blk
-
-        # Signal miner thread
-        self.retarget_event.set()
+            self.retarget_event.set()

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from binascii import hexlify
-from functools import partial
 import logging
 import socketserver
 from time import sleep
@@ -27,8 +26,7 @@ class Shop(socketserver.StreamRequestHandler):
 
         # Create miner
         self.miner_address = self.wallet.new_address()
-        self.miner = Miner(self.blockchain, partial(Shop.mined_block, self),
-                           self.miner_address)
+        self.miner = Miner(self.blockchain, self.miner_address)
 
         # Start blockchain server
         self.p2p = P2P(self.blockchain, self.miner, port=BLOCKCHAIN_PORT,
@@ -41,6 +39,7 @@ class Shop(socketserver.StreamRequestHandler):
 
         # Wait until some blocks are mined
         while self.blockchain.head.get_height() < 10:
+            self.poll_miner()
             sleep(0.1)
 
         # Shop
@@ -56,7 +55,12 @@ class Shop(socketserver.StreamRequestHandler):
 
         last_balance = 0
         while True:
+            # Handle network events
             self.p2p.handle_incoming_data()
+
+            # Handle blocks from miner
+            self.poll_miner()
+
             new_balance = self.wallet.get_balance(self.shop_address)
             if new_balance != last_balance:
                 self.wfile.write(b'Thank you for your payment over %i STC! '
@@ -66,11 +70,13 @@ class Shop(socketserver.StreamRequestHandler):
                     self.wfile.write(b'Thank you for your purchase! Incredible'
                                      b' wealth you got there!\n%s\n' % FLAG)
                 last_balance = new_balance
-            sleep(0.1)
+            sleep(0.01)
 
-    def mined_block(self, block):
-        self.p2p.broadcast_block(block)
-        self.blockchain.add_block(block)
+    def poll_miner(self):
+        mined_block = self.miner.get_mined_block()
+        if mined_block is not None:
+            self.blockchain.add_block(mined_block)
+            self.p2p.broadcast_block(mined_block)
 
 
 if __name__ == "__main__":
