@@ -1,15 +1,13 @@
 from binascii import hexlify
 import logging
-import math
-from statistics import median
 import time
 
 from . import crypto
 from .crypto import HASH_LEN, NO_HASH
 from .serialize import SerializationBuffer
 from .settings import (
-    DIFF_PERIOD_LEN,
-    BLOCK_TIME
+    GENESIS_PREVHASH,
+    GENESIS_TIME
 )
 from .transaction import Transaction
 
@@ -25,15 +23,12 @@ class Block:
         self.diff = 1
         self.txs = []
 
-        self._validated = False
-        self._valid = False
         self._parent = None
         self._height = -1
 
     def set_parent(self, parent):
         self._parent = parent
         self._height = parent._height + 1
-        self._validated = False
 
     def get_parent(self):
         return self._parent
@@ -113,66 +108,6 @@ class Block:
         self.merkle_root = crypto.merkle_root(tx_bufs)
         self._validated = False
 
-    def get_next_diff(self):
-        if (self._height + 1) % DIFF_PERIOD_LEN != 0:
-            return self.diff
-
-        # Beginning of new difficulty period
-        # Get how long the last period took
-        first_block = self
-        for _ in range(DIFF_PERIOD_LEN - 2):
-            first_block = first_block._parent
-        timediff = self.timestamp - first_block.timestamp
-
-        # Fix zero timediff at low difficulties
-        if timediff == 0:
-            timediff = 1
-
-        # Adjust diff, so next period has correct time
-        next_diff = int(
-            math.log((2 ** self.diff) * BLOCK_TIME * DIFF_PERIOD_LEN
-                     / timediff, 2))
-        if next_diff <= 0:
-            next_diff = 1
-        return next_diff
-
-    def is_header_valid(self):
-        # Check metadata is available
-        if self._parent is None:
-            return False
-        if self._height == -1:
-            return False
-        if self._validated:
-            return self._valid
-        if self.prev_hash != self._parent.get_hash():
-            return False
-
-        # Check timestamp
-        if self.timestamp > time.time() + 7200:
-            log.info("Block is more than two hours into the future!")
-            return False
-
-        last_timestamps = []
-        cur = self.get_parent()
-        for _ in range(10):
-            last_timestamps.append(cur.timestamp)
-            cur = cur.get_parent()
-        if self.timestamp < median(last_timestamps):
-            log.info("Block is older than median of last 10 blocks!")
-            return False
-
-        # Check difficulty
-        if self.diff != self._parent.get_next_diff():
-            return False
-
-        # Check Proof-of-Work
-        block_hash = self.get_hash()
-        if int.from_bytes(block_hash, byteorder='big') >> (
-                8 * HASH_LEN - self.diff) != 0:
-            return False
-
-        return True
-
     def find_common_ancestor(self, other_block):
         block1 = self if self._height > other_block._height else other_block
         block2 = other_block if self._height > other_block._height else self
@@ -191,3 +126,14 @@ class Block:
             block2 = block2.get_parent()
 
         return block1.get_parent()
+
+
+# Genesis block
+GENESIS = Block()
+GENESIS._height = 0
+GENESIS._parent = GENESIS
+GENESIS.prev_hash = GENESIS_PREVHASH
+GENESIS.timestamp = GENESIS_TIME
+GENESIS.update_merkle_root()
+
+GENESIS_HASH = GENESIS.get_hash()

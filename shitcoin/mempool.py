@@ -1,6 +1,6 @@
 from functools import partial
 
-from .utxoset import InvalidTransaction
+from .exceptions import InvalidTransaction
 
 
 class Mempool:

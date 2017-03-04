@@ -3,12 +3,9 @@ from collections import deque
 
 from . import crypto
 from .crypto import NO_HASH
+from .exceptions import NotEnoughFunds
 from .settings import WALLET_PATH, MIN_CONFIRMATIONS
 from .transaction import Transaction, Input, Output
-
-
-class NotEnoughFunds(Exception):
-    pass
 
 
 class Wallet:

@@ -12,6 +12,7 @@ from .crypto import HASH_LEN
 from .mempool import Mempool
 from .settings import INITIAL_REWARD, REWARD_HALVING_LEN
 from .transaction import Transaction, Output, Input
+from .validation import get_next_diff
 
 log = logging.getLogger(__name__)
 
@@ -149,7 +150,7 @@ class Miner:
         blk.set_parent(self.blockchain.head)
         blk.prev_hash = self.blockchain.head.get_hash()
         blk.timestamp = int(time.time())
-        blk.diff = self.blockchain.head.get_next_diff()
+        blk.diff = get_next_diff(self.blockchain.head)
         blk.add_transactions(self.mempool.transactions.values())
 
         # Add coinbase
