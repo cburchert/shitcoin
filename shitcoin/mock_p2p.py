@@ -136,17 +136,16 @@ class P2P:
             data = resp_buf.get_bytes()
             sock.send(struct.pack(">I", len(data)) + data)
 
-    def handle_incoming_data(self):
-        with self.lock:
-            blocks_received = self.blocks_received
-            self.blocks_received = []
-
-        for blk in blocks_received:
-            self.blockchain.add_block(blk)
-
+    def get_incoming_transactions(self):
         with self.lock:
             txs_received = self.txs_received
             self.txs_received = []
 
-        for tx in txs_received:
-            self.miner.add_transaction(tx)
+        return txs_received
+
+    def get_incoming_blocks(self):
+        with self.lock:
+            blocks_received = self.blocks_received
+            self.blocks_received = []
+
+        return blocks_received

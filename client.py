@@ -112,10 +112,10 @@ class RPC:
                         hashrate = self.miner.get_hashrate()
                         seconds_per_block = (
                             (2 ** get_next_diff(self.blockchain.get_head()))
-                            / hashrate / 1000)
+                            / hashrate)
                         cli_sock.send(b'Hashrate is %.2f kH/s '
                                       b'(~ %.2f s per block)\n'
-                                      % (hashrate, seconds_per_block))
+                                      % (hashrate / 1000, seconds_per_block))
 
                     elif cmd == b'ascii':
                         msg = self.asciiart(int(args[1]))
@@ -179,10 +179,21 @@ class Client:
 
     def main_loop(self):
         while True:
-            self.p2p.handle_incoming_data()
+            self.poll_net()
             self.poll_miner()
 
             sleep(0.01)
+
+    def poll_net(self):
+        blocks_received = self.p2p.get_incoming_blocks()
+        for blk in blocks_received:
+            # Remote blocks can cheat difficulty (lol sucks to be you)
+            blk.reduce_diff = True
+            self.blockchain.add_block(blk)
+
+        txs_received = self.p2p.get_incoming_transactions()
+        for tx in txs_received:
+            self.miner.add_transaction(tx)
 
     def poll_miner(self):
         mined_block = self.miner.get_mined_block()

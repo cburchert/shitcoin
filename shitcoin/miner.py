@@ -26,11 +26,24 @@ class MinerIsNotRunningException(Exception):
 
 
 class Miner:
-    def __init__(self, blockchain, pubkey):
+    def __init__(self, blockchain, pubkey, reduce_local_diff=False):
+        """ Creates a miner instance.
+
+        Args:
+            blockchain(Blockchain): blockchain to mine on top of. The miner
+                will register to receive updates about new blocks and
+                automatically retarget, when a new head appears.
+            pubkey(32 bytes): Target address for the block reward
+            reduce_local_diff: The miner will produce blocks with 10 less
+                leading zeros. Used for testing or to give a miner an advantage
+                over others. Note that the blocks are technically invalid, so
+                the validation must be explicitly told to accept them.
+        """
         self.blockchain = blockchain
         self.mempool = Mempool(blockchain)
-        self.mining_thread = None
         self.pubkey = pubkey
+        self.reduce_local_diff = reduce_local_diff
+        self.mining_thread = None
 
         # Callback function
         self.retarget_callback = partial(Miner.retarget, self)
@@ -110,7 +123,12 @@ class Miner:
 
             # Prefix is block header, remove the nonce
             prefix = target_block.serialize_header().get_bytes()[:-8]
-            target_hash = 1 << (8 * HASH_LEN - target_block.diff)
+
+            # Calculate target hash value
+            diff = target_block.diff
+            if self.reduce_local_diff:
+                diff = max(diff - 10, 1)
+            target_hash = 1 << (8 * HASH_LEN - diff)
             log.debug('New mining target is %064x at blockheight %i.'
                       % (target_hash, target_block.get_height()))
 

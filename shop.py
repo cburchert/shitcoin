@@ -27,7 +27,7 @@ class Shop(socketserver.StreamRequestHandler):
 
         # Create miner
         self.miner_address = self.wallet.new_address()
-        self.miner = Miner(self.blockchain, self.miner_address)
+        self.miner = Miner(self.blockchain, self.miner_address, True)
 
         # Start blockchain server
         self.p2p = P2P(self.blockchain, self.miner, port=BLOCKCHAIN_PORT,
@@ -57,7 +57,7 @@ class Shop(socketserver.StreamRequestHandler):
         last_balance = 0
         while True:
             # Handle network events
-            self.p2p.handle_incoming_data()
+            self.poll_net()
 
             # Handle blocks from miner
             self.poll_miner()
@@ -85,9 +85,20 @@ class Shop(socketserver.StreamRequestHandler):
 
             sleep(0.01)
 
+    def poll_net(self):
+        blocks_received = self.p2p.get_incoming_blocks()
+        for blk in blocks_received:
+            self.blockchain.add_block(blk)
+
+        txs_received = self.p2p.get_incoming_transactions()
+        for tx in txs_received:
+            self.miner.add_transaction(tx)
+
     def poll_miner(self):
         mined_block = self.miner.get_mined_block()
+        # local blocks cheat difficulty
         if mined_block is not None:
+            mined_block.reduce_diff = True
             self.blockchain.add_block(mined_block)
             self.p2p.broadcast_block(mined_block)
 
