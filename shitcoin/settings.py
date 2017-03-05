@@ -3,7 +3,7 @@ from os import path
 GENESIS_PREVHASH = b'\xde\xad\xbe\xef' * 8
 GENESIS_TIME = 0
 
-BLOCK_TIME = 2.0  # seconds
+BLOCK_TIME = 5.0  # seconds
 DIFF_PERIOD_LEN = 10  # Adjust diff every x blocks
 
 # Total money supply = REWARD_HALVING_LEN * INITIAL_REWARD * 2
