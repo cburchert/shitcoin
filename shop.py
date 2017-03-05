@@ -2,6 +2,7 @@
 
 from binascii import hexlify
 import logging
+import select
 import socketserver
 from time import sleep
 
@@ -70,6 +71,18 @@ class Shop(socketserver.StreamRequestHandler):
                     self.wfile.write(b'Thank you for your purchase! Incredible'
                                      b' wealth you got there!\n%s\n' % FLAG)
                 last_balance = new_balance
+
+            # Check for remote disconnect
+            r, _, _ = select.select([self.rfile], [], [], 0)
+            if r:
+                data = self.rfile.read(1000)
+                if data == b'':
+                    # Remote disconnected
+                    log.info('Remote disconnected.')
+                    self.miner.stop_mining()
+                    self.p2p.shutdown()
+                    return
+
             sleep(0.01)
 
     def poll_miner(self):
