@@ -1,6 +1,6 @@
 # Blockchain CTF Challenge
 
-This is a CTF challenge to learn something about Bitcoin like blockchains. The blockchain creates a simple cryptocurrency.
+This is a CTF challenge to learn something about Bitcoin like blockchains. The blockchain creates a simple cryptocurrency. Your target is to steal money in the cryptocurrency to buy the flag.
 
 ## Setup
 
