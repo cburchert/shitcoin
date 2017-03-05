@@ -106,5 +106,5 @@ class Shop(socketserver.StreamRequestHandler):
 if __name__ == "__main__":
     logging.basicConfig(level=10)
     socketserver.TCPServer.allow_reuse_address = True
-    server = socketserver.TCPServer(('127.0.0.1', SHOP_PORT), Shop)
+    server = socketserver.TCPServer(('0.0.0.0', SHOP_PORT), Shop)
     server.serve_forever()
