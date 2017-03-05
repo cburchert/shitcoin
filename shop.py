@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 FLAG = b'flagbot{XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}'
 
 SHOP_PORT = 8327
-BLOCKCHAIN_PORT = 8328
+BLOCKCHAIN_PORT = 0  # Change to fix the port
 
 
 class Shop(socketserver.StreamRequestHandler):
@@ -52,7 +52,7 @@ class Shop(socketserver.StreamRequestHandler):
                          % hexlify(self.shop_address))
 
         self.wfile.write(b'Our blockchain has not found many users yet, but '
-                         b'you can find a node at port %i\n' % BLOCKCHAIN_PORT)
+                         b'you can find a node at port %i\n' % self.p2p.port)
 
         last_balance = 0
         while True:
