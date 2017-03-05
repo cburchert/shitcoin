@@ -13,6 +13,7 @@ from shitcoin.crypto import NO_PUBKEY, NO_HASH
 from shitcoin.blockchain import Blockchain
 from shitcoin.miner import Miner
 from shitcoin.mock_p2p import P2P
+from shitcoin.validation import get_next_diff
 from shitcoin.wallet import Wallet, NotEnoughFunds
 
 
@@ -110,7 +111,7 @@ class RPC:
                     elif cmd == b'show_hashrate':
                         hashrate = self.miner.get_hashrate()
                         seconds_per_block = (
-                            (2 ** self.blockchain.head.get_next_diff())
+                            (2 ** get_next_diff(self.blockchain.get_head()))
                             / hashrate / 1000)
                         cli_sock.send(b'Hashrate is %.2f kH/s '
                                       b'(~ %.2f s per block)\n'

@@ -42,7 +42,7 @@ class SerializationBuffer:
             self.write_u16(v)
         elif v <= MASK32:
             self.write_u8(0xfd)
-            self.write_u16(v)
+            self.write_u32(v)
         elif v <= MASK64:
             self.write_u8(0xfe)
             self.write_u64(v)
