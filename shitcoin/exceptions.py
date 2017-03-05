@@ -1,12 +1,4 @@
-class InvalidTransaction(Exception):
-    pass
-
-
-class UTXONotFound(InvalidTransaction):
-    pass
-
-
-class BadSignature(InvalidTransaction):
+class UTXONotFound(Exception):
     pass
 
 

@@ -4,8 +4,8 @@ from statistics import median
 import time
 
 from . import crypto
-from .crypto import HASH_LEN
-from .exceptions import InvalidTransaction
+from .crypto import HASH_LEN, NO_HASH
+from .exceptions import UTXONotFound
 from .settings import (
     BLOCK_TIME,
     DIFF_PERIOD_LEN,
@@ -34,10 +34,21 @@ def validate_block(block, utxos):
     # Check transactions
     utxos.move_on_chain(block.get_parent())
     try:
-        money_created = utxos.apply_block(block, verify=True)
-    except InvalidTransaction:
+        money_created = utxos.apply_block(block)
+    except UTXONotFound:
         log.info("Invalid transaction in block!")
         return False
+
+    # Check signatures
+    for tx in block.txs:
+        txid = tx.get_txid()
+        for inp in tx.inputs:
+            if inp.txid == NO_HASH:  # skip dummy inputs
+                continue
+            if not crypto.verify_sig(txid, inp.spent_output.pubkey,
+                                     inp.signature):
+                log.info("Invalid signature on transaction %s!" % txid)
+                return False
 
     # Check block reward
     reward = INITIAL_REWARD // (2 ** (

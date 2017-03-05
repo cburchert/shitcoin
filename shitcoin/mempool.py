@@ -1,9 +1,11 @@
 from functools import partial
 
-from .exceptions import InvalidTransaction
+from .crypto import NO_HASH, verify_sig
+from .exceptions import UTXONotFound
 
 
 class Mempool:
+    """ List of transactions, which are not included in any block yet. """
     def __init__(self, blockchain):
         self.blockchain = blockchain
         self.transactions = {}  # txid -> Transaction
@@ -25,9 +27,17 @@ class Mempool:
         # Validate transaction
         try:
             temp_utxos = self.utxos.copy()
-            fee = temp_utxos.apply_transaction(transaction, verify=True)
-        except InvalidTransaction:
+            fee = temp_utxos.apply_transaction(transaction)
+        except UTXONotFound:
             return
+
+        # Check signatures
+        for inp in transaction.inputs:
+            if inp.txid == NO_HASH:  # skip dummy inputs
+                continue
+            if not verify_sig(txid, inp.spent_output.pubkey,
+                              inp.signature):
+                return False
 
         # Only mine transaction, which pay at least 10 fee
         if fee < 10:
