@@ -105,6 +105,8 @@ class Miner:
                 with self.lock:
                     target_block = self.target_block
                     self.retarget_event.clear()
+                if self.stop_event.is_set():
+                    return
 
             # Prefix is block header, remove the nonce
             prefix = target_block.serialize_header().get_bytes()[:-8]

@@ -105,8 +105,10 @@ class Blockchain:
 
             # Inform callbacks about the new block
             with self.callback_lock:
-                for func in self.new_block_callbacks:
-                    func(self.head)
+                # Avoid calling unknown functions while holding a lock...
+                callbacks = self.new_block_callbacks[:]
+            for func in callbacks:
+                func(self.head)
 
         # Check if other blocks can be validated now
         with self.lock:
