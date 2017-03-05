@@ -4,7 +4,7 @@ import logging
 import select
 import socket
 import struct
-from threading import Thread, Lock
+from threading import Thread, Lock, Event
 from time import sleep
 
 from shitcoin.block import Block
@@ -25,6 +25,7 @@ class P2P:
 
         # Communication to network thread
         self.lock = Lock()
+        self.stop_event = Event()
         self.blocks_to_send = []
         self.blocks_received = []
         self.txs_to_send = []
@@ -33,6 +34,14 @@ class P2P:
         self.net_thread = Thread(target=P2P.net_main, name='net',
                                  args=(self,), daemon=True)
         self.net_thread.start()
+
+    def shutdown(self):
+        """ Disconnect and stop the network thread """
+        log.info('Stopping p2p thread...')
+        self.stop_event.set()
+        self.net_thread.join(10)
+        if self.net_thread.is_alive():
+            raise Exception("Could not stop network thread!")
 
     def broadcast_block(self, block):
         with self.lock:
@@ -93,6 +102,9 @@ class P2P:
                     pkg = recv_buf[4:pkg_len+4]
                     recv_buf = recv_buf[pkg_len+4:]
                     self.parse_pkg(self.sock, pkg)
+
+            if self.stop_event.is_set():
+                return
             sleep(0.1)
 
     def parse_pkg(self, sock, pkg):
