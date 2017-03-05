@@ -18,7 +18,7 @@ Start the challenge server:
 
 ## Instructions
 
-Connect to the challenge on port 8327. This will open the flag shop. While the flag shop is open, you can connect with the blockchain client to the given port:
+Connect to the challenge on port 8327. This will open the flag shop. While the flag shop is open, you can connect with the blockchain client to the port shown by the flag shop:
 
 ```
 ./client.py <server_ip> <blockchain_node_port>
