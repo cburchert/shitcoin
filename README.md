@@ -46,3 +46,13 @@ Transaction sent to miners.
 Note that this client mined 500000 STC before checking the wallet, which might take you some time. The flag shop's node can mine 1024 times faster than the client to prevent a 51% attack, so you might want to find a faster way to get money.
 
 Have fun!
+
+## Bugs and so on
+
+There are probably many unintended bugs left. If you find some unintended bugs, please report them or send a pull request. This code was written quickly without much planning.
+
+## Hints
+
+1. Vg'f n qvssvphyg ceboyrz
+2. uggc://zrzbel-nycun.jvxvn.pbz/jvxv/Gvzr_jnec
+3. Whfg tbbtyr gvzrjnec naq ovgpbva
