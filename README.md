@@ -53,6 +53,7 @@ There are probably many unintended bugs left. If you find some unintended bugs, 
 
 ## Hints
 
+These hints basically spoiler the challenge, so use them at your own risk.
+
 1. Vg'f n qvssvphyg ceboyrz
 2. uggc://zrzbel-nycun.jvxvn.pbz/jvxv/Gvzr_jnec
-3. Whfg tbbtyr gvzrjnec naq ovgpbva
